@@ -1,0 +1,121 @@
+use serde::Serialize;
+use serde::Deserialize;
+use std::fs;
+use std::path;
+
+use crate::scene_parse;
+use crate::commands;
+use crate::dispatcher;
+
+const PROJECT_FILE: &'static str = "project.yaml";
+
+#[derive(Deserialize, Serialize)]
+pub struct Project{
+    pub file_name: String,
+    paths: Dirs,
+    pub chunks: Vec<Chunk>,
+}
+
+#[derive(Deserialize, Serialize, Clone, Debug)]
+pub struct Chunk {
+    pub scene_number: usize,
+    pub start_frame: usize,
+    pub end_frame: usize,
+    pub length_frames: usize,
+    pub is_split: bool,
+    pub raw_file: String,
+    pub is_encoded: bool,
+    pub encoded_file: String,
+}
+
+#[derive(Deserialize, Serialize)]
+pub struct Dirs {
+    base: path::PathBuf,
+    tools: path::PathBuf,
+    tmp: path::PathBuf,
+    raw_chunks: path::PathBuf,
+    encoded_chunks: path::PathBuf,
+}
+
+impl Project {
+
+    pub fn new() -> Project {
+        Project { 
+            file_name: String::new(),
+            paths: Dirs {
+                base: path::PathBuf::new(),
+                tools: path::PathBuf::new(),
+                tmp: path::PathBuf::new(),
+                raw_chunks: path::PathBuf::new(),
+                encoded_chunks: path::PathBuf::new(),
+            },
+            chunks: Vec::new(),
+        }
+    }
+
+    pub fn add_target(&mut self, filename: &str) {
+        self.file_name = String::from(filename);
+    }
+
+    // TODO: Check to see if path is already set or not.
+    pub fn set_base_path(&mut self, path: path::PathBuf) {
+        self.paths.base = path;
+    }
+
+    pub fn add_chunk(&mut self, record: scene_parse::Record) {
+        println!("Adding chunk {}", record.scene_number);
+        let newchunk = Chunk {
+            scene_number: record.scene_number,
+            start_frame: record.start_frame,
+            end_frame: record.end_frame-1, // -1 because we don't want to end on the next chunk's start frame
+            length_frames: record.length_frames-1, // because we're trimming 1 off the end frame
+            is_split: false,
+            raw_file: String::new(),
+            is_encoded: false,
+            encoded_file: String::new(),
+        };
+        self.chunks.push(newchunk);
+    }
+
+    pub fn split_chunks(&mut self, chunk_indices: Vec<usize>) {
+
+        let mut frame_pairs: Vec<(usize,usize)> = Vec::new();
+
+        for i in &chunk_indices {
+            frame_pairs.push((self.chunks[*i].start_frame, self.chunks[*i].end_frame));
+        }
+
+        let raw_filenames = commands::ffmpeg_split_chunks(&self.file_name.to_string(), frame_pairs);
+
+        for i in &chunk_indices {
+            self.chunks[*i].raw_file = raw_filenames[*i].clone();
+            self.chunks[*i].is_split = true;
+        }
+
+    }
+
+    pub fn from_file() -> Project {
+
+        if !std::path::Path::new(PROJECT_FILE).exists() {
+            println!("Project file doesn't exist! Giving you a brand new one instead.");
+            return Project::new();
+        }
+        else {
+            let reader = fs::File::open(PROJECT_FILE).expect("Problem opening project file!");
+            let project = match serde_yaml::from_reader(reader) {
+                Err(error) => panic!("Error reading project! It might be old. If it is, delete the yaml file\n{:?}", error),
+                Ok(project) => project,
+            };
+            println!("Successfully read project file!");
+            return project;
+        }
+    }
+
+    pub fn save(&self) {
+        let file_writer = fs::OpenOptions::new().write(true).truncate(true).create(true)
+                                                .open(PROJECT_FILE).expect("problem opening writer");
+
+        serde_yaml::to_writer(file_writer, &self).expect("problem serializing project");
+    }
+
+}
