@@ -2,6 +2,7 @@
 /target
 /tools
 /Cargo.lock
+!/Cargo.toml
 !/src
 
 # This is my visual studio code config stuff
