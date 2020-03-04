@@ -1,4 +1,3 @@
-//#![feature(nll)]
 use std::collections::VecDeque;
 use std::sync::{Mutex, Arc, mpsc};
 use std::thread;
@@ -78,6 +77,27 @@ impl Dispatcher {
     pub fn results_size(&self) -> usize {
         let results_queue = self.results_queue.lock().unwrap();
         return results_queue.len();
+    }
+
+    pub fn get_results(&mut self) -> Option<Vec<JobResult>> {
+        
+        let mut loopsize = self.results_size();
+
+        if loopsize == 0 {
+            return None;
+        }
+
+        let mut returnvec: Vec<JobResult> = Vec::new();
+
+        let results_arc = self.results_queue.clone();
+        let mut results_queue = results_arc.lock().unwrap();
+        for i in 0..loopsize {
+            returnvec.push(results_queue.pop_back().unwrap());
+        }
+        drop(results_queue);
+
+        return Some(returnvec);
+
     }
 
     pub fn get_max_jobs(&self) -> usize {

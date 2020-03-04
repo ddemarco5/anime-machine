@@ -15,23 +15,62 @@ fn main() {
     //kill_test();
     //work_test();
     //stop_test();
-    job_test();
+    //job_test();
+    project_test();
 
 }
 
 fn env_test() {
-    let cur_dir = env::current_dir().unwrap();
+    let cur_dir_path = env::current_dir().unwrap();
+    let cur_dir = cur_dir_path.to_str().unwrap();
 
-    println!("The current directory is: {}", cur_dir.display());
+    println!("The current directory is: {}", cur_dir);
 
     let mut project = project::Project::new();
 
-    project.set_base_path(cur_dir);
+    project.set_base_path(String::from(cur_dir));
 
     project.save();
 
 }
 
+fn project_test() {
+
+    let mut testproject = project::Project::from_file();
+
+    if testproject.file_name.is_empty(){
+        let parsed_scenes = scene_parse::build_records("ep1-vid-Scenes.csv").unwrap();
+        println!("parsed {} lines from scene file.", parsed_scenes.len());
+
+
+        println!("New project detected! Adding chunks from file and a filename");
+        testproject.file_name = String::from("ep1-vid.mkv");
+        for record in parsed_scenes {
+            testproject.add_chunk(record);
+        }
+    }
+    let mut dispatcher = dispatcher::Dispatcher::new();
+
+    let targetchunk = &testproject.chunks[0];
+
+    dispatcher.push(commands::make_split(&testproject, &targetchunk));
+
+    dispatcher.start();
+
+    while dispatcher.results_size() == 0 {
+        std::thread::sleep(std::time::Duration::from_secs(10));
+    }
+
+    let result = dispatcher.get_results();
+
+    println!("Got result!: {:?}", result);
+
+
+    dispatcher.finish();
+    
+}
+
+/*
 fn job_test() {
     let mut dispatcher = dispatcher::Dispatcher::new();
 
@@ -59,7 +98,9 @@ fn job_test() {
     println!("Dispatcher's queue is empty, telling it to die.");
     dispatcher.finish();
 }
+*/
 
+/*
 fn stop_test() {
     let mut dispatcher = dispatcher::Dispatcher::new();
 
@@ -77,7 +118,9 @@ fn stop_test() {
     dispatcher.stop();
     
 }
+*/
 
+/*
 fn kill_test() {
 
     let mut dispatcher = dispatcher::Dispatcher::new();
@@ -97,7 +140,9 @@ fn kill_test() {
     dispatcher.kill();
 
 }
+*/
 
+/*
 fn work_test() {
     let mut dispatcher = dispatcher::Dispatcher::new();
 
@@ -198,4 +243,4 @@ fn work_test() {
     */
 
     println!("done!");
-}
+} */

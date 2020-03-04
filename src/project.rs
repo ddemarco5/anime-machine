@@ -12,11 +12,11 @@ const PROJECT_FILE: &'static str = "project.yaml";
 #[derive(Deserialize, Serialize)]
 pub struct Project{
     pub file_name: String,
-    paths: Dirs,
+    pub paths: Dirs,
     pub chunks: Vec<Chunk>,
 }
 
-#[derive(Deserialize, Serialize, Clone, Debug)]
+#[derive(Deserialize, Serialize, Debug)]
 pub struct Chunk {
     pub scene_number: usize,
     pub start_frame: usize,
@@ -28,13 +28,14 @@ pub struct Chunk {
     pub encoded_file: String,
 }
 
-#[derive(Deserialize, Serialize)]
+
+#[derive(Deserialize, Serialize, Clone, Debug)]
 pub struct Dirs {
-    base: path::PathBuf,
-    tools: path::PathBuf,
-    tmp: path::PathBuf,
-    raw_chunks: path::PathBuf,
-    encoded_chunks: path::PathBuf,
+    pub base: String,
+    pub tools: String,
+    pub tmp: String,
+    pub raw_chunks: String,
+    pub encoded_chunks: String,
 }
 
 impl Project {
@@ -43,11 +44,11 @@ impl Project {
         Project { 
             file_name: String::new(),
             paths: Dirs {
-                base: path::PathBuf::new(),
-                tools: path::PathBuf::new(),
-                tmp: path::PathBuf::new(),
-                raw_chunks: path::PathBuf::new(),
-                encoded_chunks: path::PathBuf::new(),
+                base: String::new(),
+                tools: String::from("tools"),
+                tmp: String::from("tmp"),
+                raw_chunks: String::from("raws"),
+                encoded_chunks: String::new(),
             },
             chunks: Vec::new(),
         }
@@ -58,8 +59,8 @@ impl Project {
     }
 
     // TODO: Check to see if path is already set or not.
-    pub fn set_base_path(&mut self, path: path::PathBuf) {
-        self.paths.base = path;
+    pub fn set_base_path(&mut self, path: String) {
+        self.paths.base = path.clone();
     }
 
     pub fn add_chunk(&mut self, record: scene_parse::Record) {
@@ -79,6 +80,7 @@ impl Project {
 
     pub fn split_chunks(&mut self, chunk_indices: Vec<usize>) {
 
+        /*
         let mut frame_pairs: Vec<(usize,usize)> = Vec::new();
 
         for i in &chunk_indices {
@@ -91,6 +93,7 @@ impl Project {
             self.chunks[*i].raw_file = raw_filenames[*i].clone();
             self.chunks[*i].is_split = true;
         }
+        */
 
     }
 
