@@ -61,12 +61,31 @@ fn project_test() {
         std::thread::sleep(std::time::Duration::from_secs(10));
     }
 
-    let result = dispatcher.get_results();
+    
+    let mut result_vec = dispatcher.get_results().unwrap();
+
+    let result = result_vec.pop().expect("error popping element off result");
 
     println!("Got result!: {:?}", result);
 
+    println!("Writing results to project file");
+    
+
+    match testproject.get_scene(result.info.chunk_num) {
+        Some(s) => {
+            println!("found our chunk!");
+            s.is_split = true;
+            s.raw_file = result.results[0].clone();
+        }
+        None => println!("Couldn't find out chunk")
+    }
+
 
     dispatcher.finish();
+
+    println!("saving project");
+    testproject.save()
+
     
 }
 

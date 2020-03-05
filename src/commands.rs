@@ -6,6 +6,11 @@ mod encode;
 use crate::project;
 
 
+const BATCH_BASE_STRING: &'static str = "@echo off\n\
+                                        {command}\n\
+                                        exit";
+
+
 pub trait Operation {
     //fn execute(&self);
     fn prepare(&mut self) -> process::Command;
@@ -21,27 +26,12 @@ pub struct JobInfo {
     pub end_frame: usize,
 }
 
-/*
-pub fn test_split(chunknum: usize, startframe: usize, endframe: usize) -> split::Split {
-    return split::Split { 
-        info: JobInfo {
-            chunk_num: chunknum,
-            file_name: String::from("ep1-vid.mkv"),
-            start_frame: startframe,
-            end_frame: endframe,
-        },
-        cleanup_files: Vec::new(),
-        raw_output: String::new(),
-     };
-}
-*/
-
 pub fn make_split(project: &project::Project, chunk: &project::Chunk) -> split::Split {
     return split::Split::new(project, chunk);
 }
 
-pub fn test_encode() -> encode::Encode {
-    return encode::Encode { 
+pub fn test_encode() -> encode::EncodePass1 {
+    return encode::EncodePass1 { 
         info: JobInfo {
             chunk_num: 0,
             file_name: String::from("ep1-vid.mkv"),

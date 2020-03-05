@@ -6,14 +6,13 @@ use std::process;
 // for writing bat files
 use std::fs::File;
 
-const FFMPEG_SPLIT_BASE_COMMAND: &'static str = "@echo off\n\
-                                                {tools_path}\\ffmpeg.exe \
+
+const FFMPEG_SPLIT_BASE_COMMAND: &'static str = "{tools_path}\\ffmpeg.exe \
                                                 -y \
                                                 -i {target_file} \
                                                 -vf select=\"between(n\\,{sf}\\,{ef}),setpts=PTS-STARTPTS\" \
                                                 -pix_fmt yuv420p \
-                                                {raws_path}\\split-{sf}-{ef}.y4m\n\
-                                                exit";
+                                                {raws_path}\\split-{sf}-{ef}.y4m";
 
 
 #[derive(Debug, Clone)]  
@@ -75,6 +74,8 @@ impl Split {
          }
     }
 
+    // TODO: In the future this should probably be generalize and pushed up one scope into the commands.rs file
+    // As in todo tomorrow... If I want to add more commands this has got to be reusable code
     fn build_batch_file(&mut self) -> String {
 
         let mut batch_filename = format!("{{tmp_dir}}\\split-{}-{}.bat", self.info.start_frame, self.info.end_frame);
@@ -96,12 +97,14 @@ impl Split {
                                                .replace("{ef}", &self.info.end_frame.to_string())
                                                .replace("{raws_path}", &self.dirs.raw_chunks.to_string());
     
+        let batch_string = commands::BATCH_BASE_STRING.replace("{command}", &command.to_string());
+
 
         println!("DEBUG: {}", batch_filename);
-        println!("DEBUG: {}", command);
+        println!("DEBUG BATCH STRING: {}", batch_string);
                                              
         let mut file = File::create(batch_filename.clone()).expect("Error creating file");
-        file.write_all(command.as_bytes()).expect("Error writing file");
+        file.write_all(batch_string.as_bytes()).expect("Error writing file");
         // file close is handled by rust's scope awareness. Once we return, scope will be left, and file will be closed.
     
         return batch_filename;

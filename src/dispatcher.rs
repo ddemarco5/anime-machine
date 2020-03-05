@@ -12,8 +12,8 @@ enum ThreadCommands {
 
 #[derive(Debug, Clone)]
 pub struct JobResult {
-    info: commands::JobInfo,
-    results: Vec<String>,
+    pub info: commands::JobInfo,
+    pub results: Vec<String>,
 }
 
 pub struct Dispatcher {
@@ -259,7 +259,7 @@ impl Dispatcher {
                 
 
                 // Delay each loop execution by 3 seconds
-                std::thread::sleep(std::time::Duration::from_secs(10));
+                std::thread::sleep(std::time::Duration::from_secs(3));
     
             }
             

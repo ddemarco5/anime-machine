@@ -78,22 +78,16 @@ impl Project {
         self.chunks.push(newchunk);
     }
 
-    pub fn split_chunks(&mut self, chunk_indices: Vec<usize>) {
+    // Returns a mutable reference to a chunk
+    pub fn get_scene(&mut self, scene_num: usize) -> Option<&mut Chunk> {
 
-        /*
-        let mut frame_pairs: Vec<(usize,usize)> = Vec::new();
-
-        for i in &chunk_indices {
-            frame_pairs.push((self.chunks[*i].start_frame, self.chunks[*i].end_frame));
+        for chunk in self.chunks.iter_mut() {
+            if chunk.scene_number == scene_num {
+                return Some(chunk);
+            }
         }
 
-        let raw_filenames = commands::ffmpeg_split_chunks(&self.file_name.to_string(), frame_pairs);
-
-        for i in &chunk_indices {
-            self.chunks[*i].raw_file = raw_filenames[*i].clone();
-            self.chunks[*i].is_split = true;
-        }
-        */
+        return None;
 
     }
 
