@@ -10,12 +10,10 @@ const BATCH_BASE_STRING: &'static str = "@echo off\n\
                                         {command}\n\
                                         exit";
 
-
 pub trait Operation {
-    //fn execute(&self);
     fn prepare(&mut self) -> process::Command;
     fn cleanup(&self);
-    fn getresults(&self) -> (JobInfo, Vec<String>);
+    fn getresults(&self) -> project::Chunk;
 }
 
 #[derive(Debug, Clone)]
@@ -26,21 +24,18 @@ pub struct JobInfo {
     pub end_frame: usize,
 }
 
-pub fn make_split(project: &project::Project, chunk: &project::Chunk) -> split::Split {
+pub fn make_split(project: &project::Project, chunk: project::Chunk) -> split::Split {
     return split::Split::new(project, chunk);
 }
 
-pub fn test_encode() -> encode::EncodePass1 {
-    return encode::EncodePass1 { 
-        info: JobInfo {
-            chunk_num: 0,
-            file_name: String::from("ep1-vid.mkv"),
-            start_frame: 0,
-            end_frame: 100,
-        },
-        crap: 0,
-     };
+pub fn make_pass1(project: &project::Project, chunk: project::Chunk) -> encode::EncodePass1 {
+    return encode::EncodePass1::new(project, chunk);
 }
+
+pub fn make_pass2(project: &project::Project, chunk: project::Chunk) -> encode::EncodePass2 {
+    return encode::EncodePass2::new(project, chunk);
+}
+
 
 pub fn build_start_command(batchfile: String) -> process::Command {
 
@@ -52,4 +47,20 @@ pub fn build_start_command(batchfile: String) -> process::Command {
 
 
     return command;
+}
+
+pub fn build_batch_contents(command_template: &str, arguments: Vec<(&str, String)>) -> String {
+
+    let mut filled_command = command_template.clone().to_string();
+
+    for (name, value) in arguments {
+        // weird, but {{ escapes a curly brace, and we want '{name}' as a result
+        let matchstr = format!("{{{}}}", name);
+        filled_command = filled_command.replace(&matchstr.to_string(), &value.to_string());
+    }
+
+    let final_batch_command = BATCH_BASE_STRING.replace("{command}", &filled_command.to_string());
+
+    return String::from(final_batch_command);
+
 }

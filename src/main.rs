@@ -50,36 +50,67 @@ fn project_test() {
         }
     }
     let mut dispatcher = dispatcher::Dispatcher::new();
-
-    let targetchunk = &testproject.chunks[0];
-
-    dispatcher.push(commands::make_split(&testproject, &targetchunk));
-
     dispatcher.start();
 
-    while dispatcher.results_size() == 0 {
-        std::thread::sleep(std::time::Duration::from_secs(10));
-    }
+    // push our split command
+    dispatcher.push(commands::make_split(&testproject, testproject.get_scene(2).unwrap()));
 
-    
+    // Give our dispatcher some time to work
+    while dispatcher.results_size() == 0 {
+        std::thread::sleep(std::time::Duration::from_secs(1));
+    }
+ 
     let mut result_vec = dispatcher.get_results().unwrap();
 
-    let result = result_vec.pop().expect("error popping element off result");
+    let mut result_chunk = result_vec.pop().expect("error popping element off result");
 
-    println!("Got result!: {:?}", result);
+    println!("Got result!: {:?}", result_chunk);
 
-    println!("Writing results to project file");
+    // For now, don't verify and assume job was successful
+    result_chunk.is_split = true;
     
+    // Update our chunk
+    testproject.update_chunk(result_chunk);
 
-    match testproject.get_scene(result.info.chunk_num) {
-        Some(s) => {
-            println!("found our chunk!");
-            s.is_split = true;
-            s.raw_file = result.results[0].clone();
-        }
-        None => println!("Couldn't find out chunk")
+    // Push our first pass encode command
+    dispatcher.push(commands::make_pass1(&testproject, testproject.get_scene(2).unwrap()));
+
+    // Give our dispatcher some time to work
+    while dispatcher.results_size() == 0 {
+        std::thread::sleep(std::time::Duration::from_secs(1));
     }
 
+    let mut result_vec = dispatcher.get_results().unwrap();
+
+    let mut result_chunk = result_vec.pop().expect("error popping element off result");
+
+    println!("Got result!: {:?}", result_chunk);
+
+    result_chunk.encode_step = project::EncodeState::PASS_1;
+
+    // Update our chunk
+    testproject.update_chunk(result_chunk);
+
+    // Push our second pass encode command
+    dispatcher.push(commands::make_pass2(&testproject, testproject.get_scene(2).unwrap()));
+
+    // Give our dispatcher some time to work
+    while dispatcher.results_size() == 0 {
+        std::thread::sleep(std::time::Duration::from_secs(1));
+    }
+
+    let mut result_vec = dispatcher.get_results().unwrap();
+
+    let mut result_chunk = result_vec.pop().expect("error popping element off result");
+
+    println!("Got result!: {:?}", result_chunk);
+
+    result_chunk.encode_step = project::EncodeState::PASS_2;
+    result_chunk.is_split = false;
+    result_chunk.raw_file = String::new();
+
+    // Update our chunk
+    testproject.update_chunk(result_chunk);
 
     dispatcher.finish();
 

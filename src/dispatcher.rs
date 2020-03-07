@@ -3,6 +3,7 @@ use std::sync::{Mutex, Arc, mpsc};
 use std::thread;
 
 use crate::commands;
+use crate::project;
 
 #[derive(Clone, Copy, Debug)]
 enum ThreadCommands {
@@ -10,11 +11,12 @@ enum ThreadCommands {
     FINISH,
 }
 
+/*
 #[derive(Debug, Clone)]
 pub struct JobResult {
     pub info: commands::JobInfo,
     pub results: Vec<String>,
-}
+} */
 
 pub struct Dispatcher {
     // A but fucky. but an arc or a mutex allows thread mutability from rust.
@@ -26,7 +28,7 @@ pub struct Dispatcher {
     // TODO: Write a method for the dispatcher to check if it's empty instead.
     thread_command: Arc<Mutex<Option<ThreadCommands>>>,
     // The buffer for our threads to write results to
-    results_queue: Arc<Mutex<VecDeque<JobResult>>>,
+    results_queue: Arc<Mutex<VecDeque<project::Chunk>>>,
     // The number of concurrent jobs we'll run
     max_jobs: Arc<Mutex<usize>>,
 }
@@ -38,7 +40,7 @@ impl Dispatcher {
             queue: Arc::new(Mutex::new(VecDeque::<Box<dyn commands::Operation + Send>>::new())),
             thread_handle: None,
             thread_command: Arc::new(Mutex::new(None)),
-            results_queue: Arc::new(Mutex::new(VecDeque::<JobResult>::new())),
+            results_queue: Arc::new(Mutex::new(VecDeque::<project::Chunk>::new())),
             max_jobs: Arc::new(Mutex::new(1)),
         }
     }
@@ -79,7 +81,7 @@ impl Dispatcher {
         return results_queue.len();
     }
 
-    pub fn get_results(&mut self) -> Option<Vec<JobResult>> {
+    pub fn get_results(&mut self) -> Option<Vec<project::Chunk>> {
         
         let mut loopsize = self.results_size();
 
@@ -87,7 +89,7 @@ impl Dispatcher {
             return None;
         }
 
-        let mut returnvec: Vec<JobResult> = Vec::new();
+        let mut returnvec: Vec<project::Chunk> = Vec::new();
 
         let results_arc = self.results_queue.clone();
         let mut results_queue = results_arc.lock().unwrap();
@@ -176,7 +178,7 @@ impl Dispatcher {
     }
     
 
-    // TODO: this is our main thread spawning work loop. Make sure it's actually functioning
+    // this is our main thread spawning work loop.
     fn spawn(&self) -> thread::JoinHandle<()> {
     
         // Clone our arcs to access our shared variables (these are mutexes)
@@ -272,7 +274,7 @@ impl Dispatcher {
 }
 
 // Loop through our running children and return a result on the first completed child one found, if one exists
-fn check_children(job_vec: &mut Vec<(std::process::Child, Box<dyn commands::Operation + Send>)>) -> Option<JobResult> {
+fn check_children(job_vec: &mut Vec<(std::process::Child, Box<dyn commands::Operation + Send>)>) -> Option<project::Chunk> {
 
     // we ain't doin shit if there's a 0 size vec
     if job_vec.is_empty() {
@@ -290,25 +292,21 @@ fn check_children(job_vec: &mut Vec<(std::process::Child, Box<dyn commands::Oper
                 println!("checker: Child {} complete", job_vec[i].0.id());
 
                 // Get our job's output
-                let (info, files) = job_vec[i].1.getresults();
+                let job_chunk = job_vec[i].1.getresults();
             
                 // Run our job's cleanup routine
                 job_vec[i].1.cleanup();
 
                 //Communicate back to the main project a job success/failure
                 println!("checker: Successfully got a status from a child!");
-                println!("checker: chunk: {}", info.chunk_num);
+                println!("checker: chunk: {}", job_chunk.scene_number);
                 println!("checker: code: {}", status.code().unwrap() as usize);
                 
-                let result = JobResult {
-                                info: info,
-                                results: files,
-                            };
 
                 // remove the job from our list
                 job_vec.remove(i);
 
-                return Some(result); // git outta here, we can't delete any more if we just removed one
+                return Some(job_chunk); // git outta here, we can't delete any more if we just removed one
             }
             Ok(None) => println!("checker: Child is still running"),
             Err(e) => panic!("checker: Error attempting to wait: {}", e),

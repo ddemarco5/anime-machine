@@ -9,6 +9,13 @@ use crate::dispatcher;
 
 const PROJECT_FILE: &'static str = "project.yaml";
 
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub enum EncodeState {
+    NOT_ENCODED,
+    PASS_1,
+    PASS_2,
+}
+
 #[derive(Deserialize, Serialize)]
 pub struct Project{
     pub file_name: String,
@@ -16,7 +23,7 @@ pub struct Project{
     pub chunks: Vec<Chunk>,
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct Chunk {
     pub scene_number: usize,
     pub start_frame: usize,
@@ -24,7 +31,7 @@ pub struct Chunk {
     pub length_frames: usize,
     pub is_split: bool,
     pub raw_file: String,
-    pub is_encoded: bool,
+    pub encode_step: EncodeState,
     pub encoded_file: String,
 }
 
@@ -48,7 +55,7 @@ impl Project {
                 tools: String::from("tools"),
                 tmp: String::from("tmp"),
                 raw_chunks: String::from("raws"),
-                encoded_chunks: String::new(),
+                encoded_chunks: String::from("enc"),
             },
             chunks: Vec::new(),
         }
@@ -72,22 +79,35 @@ impl Project {
             length_frames: record.length_frames-1, // because we're trimming 1 off the end frame
             is_split: false,
             raw_file: String::new(),
-            is_encoded: false,
+            encode_step: EncodeState::NOT_ENCODED,
             encoded_file: String::new(),
         };
         self.chunks.push(newchunk);
     }
 
-    // Returns a mutable reference to a chunk
-    pub fn get_scene(&mut self, scene_num: usize) -> Option<&mut Chunk> {
+    // Returns a chunk
+    pub fn get_scene(&self, scene_num: usize) -> Option<Chunk> {
 
-        for chunk in self.chunks.iter_mut() {
+        for chunk in self.chunks.iter() {
             if chunk.scene_number == scene_num {
-                return Some(chunk);
+                return Some(chunk.clone());
             }
         }
-
         return None;
+    }
+
+    // TODO: when writing error behavior, this needs to return an error instead of panic
+    pub fn update_chunk(&mut self, newchunk: Chunk) {
+
+        for chunk in self.chunks.iter_mut() {
+            if newchunk.scene_number == chunk.scene_number {
+                println!("replacing chunk {}\n{:?}", chunk.scene_number, newchunk);
+                *chunk = newchunk;
+                return;
+            }
+        }
+        // if we got here, it means that we didn't find our chunk
+        panic!("We didn't find a chunk to update!");
 
     }
 
