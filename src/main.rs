@@ -8,6 +8,7 @@ mod scene_parse;
 mod commands;
 mod project;
 mod dispatcher;
+mod logic;
 
 fn main() {
 
@@ -16,10 +17,15 @@ fn main() {
     //work_test();
     //stop_test();
     //job_test();
-    project_test();
+    //project_test();
+
+    let machine = logic::Machine::new(String::from("ep1-vid.mkv"));
+
+    machine.start(2);
 
 }
 
+/*
 fn env_test() {
     let cur_dir_path = env::current_dir().unwrap();
     let cur_dir = cur_dir_path.to_str().unwrap();
@@ -33,7 +39,9 @@ fn env_test() {
     project.save();
 
 }
+*/
 
+/*
 fn project_test() {
 
     let mut testproject = project::Project::from_file();
@@ -67,7 +75,7 @@ fn project_test() {
     println!("Got result!: {:?}", result_chunk);
 
     // For now, don't verify and assume job was successful
-    result_chunk.is_split = true;
+    result_chunk.state = project::EncodeState::SPLIT;
     
     // Update our chunk
     testproject.update_chunk(result_chunk);
@@ -86,7 +94,7 @@ fn project_test() {
 
     println!("Got result!: {:?}", result_chunk);
 
-    result_chunk.encode_step = project::EncodeState::PASS_1;
+    result_chunk.state = project::EncodeState::PASS_1;
 
     // Update our chunk
     testproject.update_chunk(result_chunk);
@@ -105,9 +113,9 @@ fn project_test() {
 
     println!("Got result!: {:?}", result_chunk);
 
-    result_chunk.encode_step = project::EncodeState::PASS_2;
-    result_chunk.is_split = false;
-    result_chunk.raw_file = String::new();
+    result_chunk.state = project::EncodeState::PASS_2;
+    result_chunk.raw_file.clear();
+    result_chunk.firstpass_file.clear();
 
     // Update our chunk
     testproject.update_chunk(result_chunk);
@@ -119,6 +127,7 @@ fn project_test() {
 
     
 }
+*/
 
 /*
 fn job_test() {

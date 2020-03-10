@@ -46,14 +46,15 @@ impl EncodePass1 {
 
     fn build_batch_file (&mut self) -> String {
 
-        self.chunk.encoded_file = format!("{}-firstpass", self.chunk.raw_file.clone());
+        self.chunk.firstpass_file = format!("{}-firstpass", self.chunk.raw_file.clone());
+        self.chunk.encoded_file = self.chunk.raw_file.replace(".y4m", ".ivf");
 
         let args = vec![
             ("tools_path", self.dirs.tools.clone()),
             ("pass_num", "1".to_string()),
-            ("passfile_name", self.chunk.encoded_file.clone()),
+            ("passfile_name", self.chunk.firstpass_file.clone()),
             ("enc_path", self.dirs.encoded_chunks.clone()),
-            ("encoded_filename", self.chunk.raw_file.replace(".y4m", ".ivf")),
+            ("encoded_filename", self.chunk.encoded_file.clone()),
             ("raw_path", self.dirs.raw_chunks.clone()),
             ("raw_chunk_filename", self.chunk.raw_file.clone())
         ];
@@ -86,13 +87,12 @@ impl EncodePass2 {
 
     fn build_batch_file (&mut self) -> String {
 
-        let firstpass_file = self.chunk.encoded_file.clone();
-        self.chunk.encoded_file = self.chunk.raw_file.replace(".y4m", ".ivf");
+        //self.chunk.encoded_file = self.chunk.raw_file.replace(".y4m", ".ivf");
 
         let args = vec![
             ("tools_path", self.dirs.tools.clone()),
             ("pass_num", "2".to_string()),
-            ("passfile_name", firstpass_file),
+            ("passfile_name", self.chunk.firstpass_file.clone()),
             ("enc_path", self.dirs.encoded_chunks.clone()),
             ("encoded_filename", self.chunk.encoded_file.clone()),
             ("raw_path", self.dirs.raw_chunks.clone()),
@@ -144,7 +144,7 @@ impl commands::Operation for EncodePass2 {
 
         // On the second pass we'll no longer need the raw or the firstpass data
         self.cleanup_files.push(self.dirs.raw_chunks.clone() + "\\" + &self.chunk.raw_file.clone());
-        self.cleanup_files.push(self.dirs.encoded_chunks.clone() + "\\" + &self.chunk.encoded_file.clone());
+        self.cleanup_files.push(self.dirs.encoded_chunks.clone() + "\\" + &self.chunk.firstpass_file.clone());
 
         // Create our batch file and save its location
         let batch_file_name = self.build_batch_file();

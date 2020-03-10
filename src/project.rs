@@ -9,11 +9,13 @@ use crate::dispatcher;
 
 const PROJECT_FILE: &'static str = "project.yaml";
 
-#[derive(Deserialize, Serialize, Debug, Clone)]
+#[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
 pub enum EncodeState {
-    NOT_ENCODED,
+    NOT_STARTED,
+    SPLIT,
     PASS_1,
     PASS_2,
+    COMPLETE
 }
 
 #[derive(Deserialize, Serialize)]
@@ -29,9 +31,9 @@ pub struct Chunk {
     pub start_frame: usize,
     pub end_frame: usize,
     pub length_frames: usize,
-    pub is_split: bool,
+    pub state: EncodeState,
     pub raw_file: String,
-    pub encode_step: EncodeState,
+    pub firstpass_file: String,
     pub encoded_file: String,
 }
 
@@ -47,7 +49,7 @@ pub struct Dirs {
 
 impl Project {
 
-    pub fn new() -> Project {
+    fn new() -> Project {
         Project { 
             file_name: String::new(),
             paths: Dirs {
@@ -60,6 +62,45 @@ impl Project {
             chunks: Vec::new(),
         }
     }
+
+    pub fn open(filename: String) -> Project {
+
+        // Could handle the case of project file not existing, but if we think it exists and doesn't
+        // that means there's a bug somewhere else, so we'll panic
+        if !std::path::Path::new(PROJECT_FILE).exists() {
+            println!("Project file doesn't exist! Creating a new one");
+            let mut project = Project::new();
+            project.file_name = filename;
+            let parsed_scenes = scene_parse::build_records("ep1-vid-Scenes.csv").unwrap();
+            println!("parsed {} lines from scene file.", parsed_scenes.len());
+            for record in parsed_scenes {
+                project.add_chunk(record);
+            }
+            return project;
+        }
+        else {
+            let reader = fs::File::open(PROJECT_FILE).expect("Problem opening project file!");
+            let project = match serde_yaml::from_reader(reader) {
+                Err(error) => panic!("Error reading project! It might be old. If it is, delete the yaml file\n{:?}", error),
+                Ok(project) => project,
+            };
+            println!("Successfully read project file!");
+            return project;
+        }
+    }
+
+    pub fn chunks_complete_incomplete(&self) -> (usize, usize) {
+        let mut done = 0;
+        let mut notdone = 0;
+        for chunk in self.chunks.iter() {
+            match chunk.state {
+                EncodeState::COMPLETE => done += 1,
+                _ => notdone += 1,
+            }
+        }
+        return (done, notdone);
+    }
+
 
     pub fn add_target(&mut self, filename: &str) {
         self.file_name = String::from(filename);
@@ -77,9 +118,9 @@ impl Project {
             start_frame: record.start_frame,
             end_frame: record.end_frame-1, // -1 because we don't want to end on the next chunk's start frame
             length_frames: record.length_frames-1, // because we're trimming 1 off the end frame
-            is_split: false,
+            state: EncodeState::NOT_STARTED,
             raw_file: String::new(),
-            encode_step: EncodeState::NOT_ENCODED,
+            firstpass_file: String::new(),
             encoded_file: String::new(),
         };
         self.chunks.push(newchunk);
@@ -109,23 +150,6 @@ impl Project {
         // if we got here, it means that we didn't find our chunk
         panic!("We didn't find a chunk to update!");
 
-    }
-
-    pub fn from_file() -> Project {
-
-        if !std::path::Path::new(PROJECT_FILE).exists() {
-            println!("Project file doesn't exist! Giving you a brand new one instead.");
-            return Project::new();
-        }
-        else {
-            let reader = fs::File::open(PROJECT_FILE).expect("Problem opening project file!");
-            let project = match serde_yaml::from_reader(reader) {
-                Err(error) => panic!("Error reading project! It might be old. If it is, delete the yaml file\n{:?}", error),
-                Ok(project) => project,
-            };
-            println!("Successfully read project file!");
-            return project;
-        }
     }
 
     pub fn save(&self) {

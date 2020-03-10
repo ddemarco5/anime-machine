@@ -7,6 +7,8 @@ use std::process;
 use std::fs::File;
 
 
+// TODO!!!! Speed up the split! Possibly by using a duration arg in ffmpeg
+
 const FFMPEG_SPLIT_BASE_COMMAND: &'static str = "{tools_path}\\ffmpeg.exe \
                                                 -y \
                                                 -i {source_file} \

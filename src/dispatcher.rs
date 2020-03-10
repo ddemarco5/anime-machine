@@ -50,8 +50,13 @@ impl Dispatcher {
     // we specify static here so rust doesn't have to try to guess the lifetime, and send to allow access between threads
     pub fn push<T: commands::Operation + Send + 'static>(&self, item: T) {
         //queue_push(&self.queue.clone(), item);
+
+        //let boxeditem: Box::<dyn commands::Operation + Send + 'static> = Box::from(item);
         let boxeditem = Box::new(item);
+
         //queue_push(&self.queue.clone(), item);
+        //queue_push(&self.queue.clone(), boxeditem);
+        //queue_push(&self.queue.clone(), boxeditem);
         queue_push(&self.queue.clone(), boxeditem);
     }
 
@@ -120,7 +125,7 @@ impl Dispatcher {
         self.thread_handle = Some(self.spawn());
     }
 
-    //block until our worker thread is stopped, consume dispatcher
+    //block until our worker thread is stopped
     pub fn stop(&mut self) {
 
         if self.thread_handle.is_none() {
@@ -146,10 +151,12 @@ impl Dispatcher {
             panic!("Our thread handler is missing! We should have one at this point");
         }
 
+        
         // Remove pending elements from the queue
         let mut queue = self.queue.lock().unwrap();
         queue.clear();
         drop(queue);
+        
 
         // Tell our thread to finish peacefully
         set_command(ThreadCommands::FINISH, &self.thread_command.clone());
