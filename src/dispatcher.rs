@@ -88,7 +88,7 @@ impl Dispatcher {
 
     pub fn get_results(&mut self) -> Option<Vec<project::Chunk>> {
         
-        let mut loopsize = self.results_size();
+        let loopsize = self.results_size();
 
         if loopsize == 0 {
             return None;
@@ -98,13 +98,29 @@ impl Dispatcher {
 
         let results_arc = self.results_queue.clone();
         let mut results_queue = results_arc.lock().unwrap();
-        for i in 0..loopsize {
+        for _ in 0..loopsize {
             returnvec.push(results_queue.pop_back().unwrap());
         }
         drop(results_queue);
 
         return Some(returnvec);
 
+    }
+
+    // A blocking function that will loop until there are results in our results queue
+    pub fn wait_results(&mut self) -> Vec<project::Chunk> {
+        loop {
+            match self.get_results() {
+                Some(r) => {
+                    return r;
+                }
+                // Keep waiting
+                _ => ()
+            }
+
+            // Wait a bit so we don't pin the cpu
+            std::thread::sleep(std::time::Duration::from_secs(1));
+        }
     }
 
     pub fn get_max_jobs(&self) -> usize {
@@ -223,7 +239,8 @@ impl Dispatcher {
                             }
                         }
                     }
-                    None => println!("disp: no command to process")
+                    //None => println!("disp: no command to process")
+                    None => ()
                 }
 
                 // First thing we do is see if any jobs have completed
@@ -239,7 +256,7 @@ impl Dispatcher {
                                 drop(results_queue);
                             },
                             None => {
-                                println!("disp: all jobs were running");
+                                //println!("disp: all jobs were running");
                                 break;
                             }
                         }
@@ -290,13 +307,13 @@ fn check_children(job_vec: &mut Vec<(std::process::Child, Box<dyn commands::Oper
 
     // TODO find a nice iterator method to go through this vec... I had trouble with the dyn trait with other methods
     for i in 0..job_vec.len() {
-        println!("checker: Inspecting job: {}", i);
+        //println!("checker: Inspecting job: {}", i);
 
         // Check to see if our child is completed
         match job_vec[i].0.try_wait() {
             Ok(Some(status)) => {
 
-                println!("checker: Child {} complete", job_vec[i].0.id());
+                //println!("checker: Child {} complete", job_vec[i].0.id());
 
                 // Get our job's output
                 let job_chunk = job_vec[i].1.getresults();
@@ -305,9 +322,9 @@ fn check_children(job_vec: &mut Vec<(std::process::Child, Box<dyn commands::Oper
                 job_vec[i].1.cleanup();
 
                 //Communicate back to the main project a job success/failure
-                println!("checker: Successfully got a status from a child!");
-                println!("checker: chunk: {}", job_chunk.scene_number);
-                println!("checker: code: {}", status.code().unwrap() as usize);
+                //println!("checker: Successfully got a status from a child!");
+                //println!("checker: chunk: {}", job_chunk.scene_number);
+                //println!("checker: code: {}", status.code().unwrap() as usize);
                 
 
                 // remove the job from our list
@@ -315,7 +332,8 @@ fn check_children(job_vec: &mut Vec<(std::process::Child, Box<dyn commands::Oper
 
                 return Some(job_chunk); // git outta here, we can't delete any more if we just removed one
             }
-            Ok(None) => println!("checker: Child is still running"),
+            //Ok(None) => println!("checker: Child is still running"),
+            Ok(None) => (),
             Err(e) => panic!("checker: Error attempting to wait: {}", e),
         }
 

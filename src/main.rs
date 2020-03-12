@@ -21,7 +21,7 @@ fn main() {
 
     let machine = logic::Machine::new(String::from("ep1-vid.mkv"));
 
-    machine.start(2);
+    machine.start(3);
 
 }
 

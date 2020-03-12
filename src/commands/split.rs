@@ -95,6 +95,8 @@ impl commands::Operation for Split {
 
     // Return a chunk that needs to be verified by the main project logic, consumes self
     fn getresults(&self) -> project::Chunk {
-        return self.chunk.clone();
+        let mut finished_chunk = self.chunk.clone();
+        finished_chunk.state = project::EncodeState::SPLIT;
+        return finished_chunk;
     }
 }

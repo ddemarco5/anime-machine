@@ -89,18 +89,6 @@ impl Project {
         }
     }
 
-    pub fn chunks_complete_incomplete(&self) -> (usize, usize) {
-        let mut done = 0;
-        let mut notdone = 0;
-        for chunk in self.chunks.iter() {
-            match chunk.state {
-                EncodeState::COMPLETE => done += 1,
-                _ => notdone += 1,
-            }
-        }
-        return (done, notdone);
-    }
-
 
     pub fn add_target(&mut self, filename: &str) {
         self.file_name = String::from(filename);

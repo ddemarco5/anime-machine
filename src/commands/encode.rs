@@ -134,7 +134,9 @@ impl commands::Operation for EncodePass1 {
         }
     }
     fn getresults(&self) -> project::Chunk {
-        return self.chunk.clone();
+        let mut finished_chunk = self.chunk.clone();
+        finished_chunk.state = project::EncodeState::PASS_1;
+        return finished_chunk;
     }
 }
 
@@ -161,6 +163,10 @@ impl commands::Operation for EncodePass2 {
         }
     }
     fn getresults(&self) -> project::Chunk {
-        return self.chunk.clone();
+        let mut finished_chunk = self.chunk.clone();
+        finished_chunk.state = project::EncodeState::PASS_2;
+        finished_chunk.raw_file.clear();
+        finished_chunk.firstpass_file.clear();
+        return finished_chunk;
     }
 }
