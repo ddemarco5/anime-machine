@@ -9,7 +9,8 @@ use std::fs::File;
 const MKVMERGE_BASE_COMMAND: &'static str = "{tools_path}\\mkvtoolnix\\mkvmerge.exe \
                                              -o {output_file} \
                                              --timestamps 0:{timestamps_file} \
-                                             {encoded_file_list}";
+                                             {encoded_file_list} \
+                                             -D {original_file}";
 
 #[derive(Debug, Clone)]  
 pub struct Merge<'a> {
@@ -74,6 +75,7 @@ impl Merge<'_> {
             ("output_file", outfile), // temporary
             ("timestamps_file", self.timestamp_file.clone()),
             ("encoded_file_list", file_list),
+            ("original_file", self.project.file_name.clone()),
         ];
 
         let batch_command = commands::build_batch_contents(MKVMERGE_BASE_COMMAND, args);
