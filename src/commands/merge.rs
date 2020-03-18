@@ -7,6 +7,7 @@ use std::process;
 use std::fs::File;
 
 const MKVMERGE_BASE_COMMAND: &'static str = "{tools_path}\\mkvtoolnix\\mkvmerge.exe \
+                                             --disable-track-statistics-tags \
                                              -o {output_file} \
                                              --timestamps 0:{timestamps_file} \
                                              {encoded_file_list} \

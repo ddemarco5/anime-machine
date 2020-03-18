@@ -88,6 +88,11 @@ impl Project {
             for record in parsed_scenes {
                 project.add_chunk(record);
             }
+            // Change our last chunk to make sure we don't drop that last frame
+            let mut last_chunk = project.chunks.iter_mut().last().unwrap();
+            last_chunk.end_frame += 1;
+            last_chunk.length_frames += 1;
+
             return project;
         }
         else {
