@@ -10,6 +10,7 @@ use std::fs::File;
 // TODO!!!! Speed up the split! Possibly by using a duration arg in ffmpeg
 
 const FFMPEG_SPLIT_BASE_COMMAND: &'static str = "{tools_path}\\ffmpeg.exe \
+                                                -t {duration} \
                                                 -y \
                                                 -i {source_file} \
                                                 -vf select=\"between(n\\,{sf}\\,{ef}),setpts=PTS-STARTPTS\" \
@@ -20,6 +21,7 @@ const FFMPEG_SPLIT_BASE_COMMAND: &'static str = "{tools_path}\\ffmpeg.exe \
 #[derive(Debug, Clone)]  
 pub struct Split {
     pub chunk: project::Chunk,
+    proj_fps: f64,
     pub cleanup_files: Vec<String>,
     video_source: String,
     // TODO: Don't copy the dirs, but store a refrence to the main project and read it from there
@@ -31,6 +33,7 @@ impl Split {
     pub fn new(project: &project::Project, chunk: project::Chunk) -> Split {
         Split { 
             chunk: chunk.clone(),
+            proj_fps: project.get_fps(),
             cleanup_files: Vec::new(),
             video_source: String::from(project.file_name.clone()),
             dirs: project.paths.clone(),
@@ -42,7 +45,11 @@ impl Split {
         // This is fuckin hacky. I need a better way to keep track of files
         self.chunk.raw_file = format!("split-{}-{}.y4m", self.chunk.start_frame, self.chunk.end_frame);
 
+        // Calculate the direction in seconds and give it an extra one just for breathing room
+        let duration = (self.chunk.end_frame as f64 / self.proj_fps) + 1 as f64;
+
         let args = vec![
+            ("duration", duration.to_string()),
             ("tools_path", self.dirs.tools.clone()),
             ("source_file", self.video_source.clone()),
             ("sf", self.chunk.start_frame.to_string()),

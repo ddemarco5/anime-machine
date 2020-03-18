@@ -1,11 +1,13 @@
 use serde::Serialize;
 use serde::Deserialize;
+use serde_json::Value;
 use std::fs;
 use std::path;
 
 use crate::scene_parse;
 use crate::commands;
 use crate::dispatcher;
+use crate::fileinfo;
 
 const PROJECT_FILE: &'static str = "project.yaml";
 
@@ -18,10 +20,12 @@ pub enum EncodeState {
     COMPLETE
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Debug)]
 pub struct Project{
     pub file_name: String,
     pub paths: Dirs,
+    pub container_info: Option<Value>,
+    pub videostream_info: Option<Value>,
     pub chunks: Vec<Chunk>,
 }
 
@@ -49,9 +53,11 @@ pub struct Dirs {
 
 impl Project {
 
-    fn new() -> Project {
-        Project { 
-            file_name: String::new(),
+    fn new(filename: String) -> Project {
+
+        // Make our stub project
+        let mut project = Project { 
+            file_name: filename.clone(),
             paths: Dirs {
                 base: String::new(),
                 tools: String::from("tools"),
@@ -59,8 +65,14 @@ impl Project {
                 raw_chunks: String::from("raws"),
                 encoded_chunks: String::from("enc"),
             },
+            container_info: None,
+            videostream_info: None,
             chunks: Vec::new(),
-        }
+        };
+
+        // Get the mediainfo output for our target file
+        project.generate_project_info();
+        return project;
     }
 
     pub fn open(filename: String) -> Project {
@@ -69,7 +81,7 @@ impl Project {
         // that means there's a bug somewhere else, so we'll panic
         if !std::path::Path::new(PROJECT_FILE).exists() {
             println!("Project file doesn't exist! Creating a new one");
-            let mut project = Project::new();
+            let mut project = Project::new(filename.clone());
             project.file_name = filename;
             let parsed_scenes = scene_parse::build_records("ep1-vid-Scenes.csv").unwrap();
             println!("parsed {} lines from scene file.", parsed_scenes.len());
@@ -112,6 +124,20 @@ impl Project {
             encoded_file: String::new(),
         };
         self.chunks.push(newchunk);
+    }
+
+    pub fn generate_project_info(&mut self) {
+        let (containerinfo, codecinfo) = fileinfo::parse_container_and_codec(&self, self.file_name.clone());
+        self.container_info = Some(containerinfo);
+        self.videostream_info = Some(codecinfo);
+    }
+
+    // Returns the fps of the project from the details
+    pub fn get_fps(&self) -> f64 {
+        // bit hacky, but we get an f64 value from the string in our json value
+        let videostream = self.videostream_info.clone().unwrap();
+        let fps_value = videostream.get("FrameRate").unwrap();
+        return fps_value.as_str().unwrap().parse::<f64>().unwrap();
     }
 
     // Returns a chunk

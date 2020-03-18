@@ -10,3 +10,4 @@ edition = "2018"
 csv = "*"
 serde = {version="*", features =["derive"]}
 serde_yaml = "*"
+serde_json = "*"

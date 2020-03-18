@@ -4,6 +4,7 @@ use crate::project;
 use crate::project::EncodeState::{NOT_STARTED, SPLIT, PASS_1, PASS_2, COMPLETE};
 use crate::dispatcher;
 use crate::commands;
+use crate::commands::Operation;
 
 
 pub struct Machine {
@@ -45,7 +46,7 @@ impl Machine {
                 self.work_list.extend(s);
             },
             None => {
-                panic!("We couldn't find any other chunks to work on. Either project is done, or this is a bug")
+                println!("We couldn't find any other chunks to work on. Either project is done, or this is a bug");
             },
         }
         println!("Work list:\n{:?}", self.work_list);
@@ -119,7 +120,28 @@ impl Machine {
 
         }
 
-        println!("Nothing left in our work list, we must not have any more chunks to work on! Done!");
+        println!("Nothing left in our work list, we must not have any more chunks to work on!");
+
+        // Merge the file here
+        let mut mergejob = commands::make_merge(&self.project);
+
+        println!("Merging the encoded chunks");
+        let mut mergecommand = mergejob.prepare();
+
+        mergecommand.output().expect("failed to execute merge job");
+
+        // don't clean right now for debugging purposes
+        mergejob.cleanup();
+
+        // Mark all of our chunks as "complete"
+        println!("Marking chunks as complete");
+        for chunk in self.project.chunks.iter_mut() {
+            chunk.state = COMPLETE;
+        }
+
+        self.project.save();
+
+        self.dispatcher.finish();
 
     }
 

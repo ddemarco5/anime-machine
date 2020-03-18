@@ -2,6 +2,8 @@ use std::process;
 
 mod split;
 mod encode;
+mod mediainfo;
+mod merge;
 
 use crate::project;
 
@@ -9,6 +11,7 @@ use crate::project;
 const BATCH_BASE_STRING: &'static str = "@echo off\n\
                                         {command}\n\
                                         exit";
+
 
 pub trait Operation {
     fn prepare(&mut self) -> process::Command;
@@ -34,6 +37,14 @@ pub fn make_pass1(project: &project::Project, chunk: project::Chunk) -> encode::
 
 pub fn make_pass2(project: &project::Project, chunk: project::Chunk) -> encode::EncodePass2 {
     return encode::EncodePass2::new(project, chunk);
+}
+
+pub fn make_mediainfo(project: &project::Project, target: String) -> mediainfo::MediaInfo {
+    return mediainfo::MediaInfo::new(project, target);
+}
+
+pub fn make_merge(project: &project::Project) -> merge::Merge {
+    return merge::Merge::new(project);
 }
 
 
