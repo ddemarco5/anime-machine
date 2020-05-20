@@ -10,6 +10,7 @@ mod project;
 mod dispatcher;
 mod logic;
 mod fileinfo;
+mod gui;
 
 fn main() {
 
@@ -20,8 +21,11 @@ fn main() {
     //job_test();
     //project_test();
 
-    let machine = logic::Machine::new(String::from("ep1-vid.mkv"));
-    machine.start(3);
+    gui::run();
+    
+
+    //let machine = logic::Machine::new(String::from("ep1-vid.mkv"));
+    //machine.start(3);
 
     //let test = project::Project::open("ep1-vid.mkv".to_string());
 

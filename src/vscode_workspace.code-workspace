@@ -1,0 +1,32 @@
+{
+	"folders": [
+		{
+			"path": ".."
+		}
+	],
+	"settings": {
+		"ego.power-tools": {
+			"buttons": [
+				{
+					"text": "cargo build",
+					"tooltip": "Execute Cargo build",
+					"action": {
+						"type": "command",
+						"command": "workbench.action.tasks.build"
+						//"args": "build"
+					}
+				},
+				{
+				"text": "cargo run",
+					"tooltip": "Execute Cargo run",
+					"action": {
+						"type": "command",
+						"command": "workbench.action.tasks.test"
+						//"args": "build"
+					}
+				}
+			]
+		}
+	}
+	
+}
